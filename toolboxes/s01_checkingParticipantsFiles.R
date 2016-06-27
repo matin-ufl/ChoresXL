@@ -1,11 +1,11 @@
-setwd("~/Workspaces/R workspace/ChoresXL/toolboxes/")
+
 
 # Functions ------------------------------------------------
 
 check.one.participant.folder <- function(chores.directory, participant) {
      # Initializing the result
-     ppt.report <- data.frame(matrix(nrow = 1, ncol = 53))
-     ppt.report[1, ] <- c(participant, rep("MISSING", 51), "OK")
+     ppt.report <- data.frame(matrix(nrow = 1, ncol = 54))
+     ppt.report[1, ] <- c(substr(participant, start = 5, stop = 7), participant, "OK", rep("MISSING", 51))
      gt3x.postfix <- paste("GT3X", c("ankle", "hip", "thigh", "upper_arm", "wrist"), sep = ".", collapse = ",")
      csv.postfix <- paste("CSV", c("ankle", "hip", "thigh", "upper_arm", "wrist"), sep = ".", collapse = ",")
      
@@ -33,13 +33,12 @@ check.one.participant.folder <- function(chores.directory, participant) {
                         x = paste(paste("VH", unlist(strsplit(gt3x.postfix, split = ",")), sep = ".", collapse = ","),
                                   paste("VH", unlist(strsplit(csv.postfix, split = ",")), sep = ".", collapse = ","),
                                   collapse = ","))
-     colnames(ppt.report) <- c("ID", "TASK TIMES",
+     colnames(ppt.report) <- c("NUM", "PARTICIPANT", "STATUS", "TASK TIMES",
                                unlist(strsplit(v1.postFix, split = ",")),
                                unlist(strsplit(v2.postFix, split = ",")),
                                unlist(strsplit(v3.postFix, split = ",")),
                                unlist(strsplit(v4.postFix, split = ",")),
-                               unlist(strsplit(vh.postFix, split = ",")),
-                               "status")
+                               unlist(strsplit(vh.postFix, split = ",")))
      rm(csv.postfix, gt3x.postfix, v1.postFix, v2.postFix, v3.postFix, v4.postFix, vh.postFix)
      
      # Checking the directories and files
@@ -59,10 +58,12 @@ check.one.participant.folder <- function(chores.directory, participant) {
                d <- dir(visitFolder, "/*.gt3x")
                for(fileName in d) {
                     bodyPlacement <- unlist(strsplit(fileName, split = "-"))[2]
-                    for(part in c("ankle", "hip", "thigh", "upper_arm", "wrist")) {
-                         if(tolower(bodyPlacement) == paste(part, ".gt3x", sep = "")) {
-                              ppt.report[paste(visit, "GT3X", part, sep = ".")] <- "OK"
-                              break
+                    if(!is.na(bodyPlacement)) {
+                         for(part in c("ankle", "hip", "thigh", "upper_arm", "wrist")) {
+                              if(tolower(substr(bodyPlacement, start = 1, stop = nchar(part))) == part) {
+                                   ppt.report[paste(visit, "GT3X", part, sep = ".")] <- "OK"
+                                   break
+                              }
                          }
                     }
                }
@@ -71,10 +72,12 @@ check.one.participant.folder <- function(chores.directory, participant) {
                     csv.d <- dir(visitFolderCSV, "/*.csv")
                     for(fileName in csv.d) {
                          bodyPlacement <- unlist(strsplit(fileName, split = "-"))[2]
-                         for(part in c("ankle", "hip", "thigh", "upper_arm", "wrist")) {
-                              if(tolower(substr(bodyPlacement, start = 1, stop = nchar(part))) == part) {
-                                   ppt.report[paste(visit, "CSV", part, sep = ".")] <- "OK"
-                                   break
+                         if(!is.na(bodyPlacement)) {
+                              for(part in c("ankle", "hip", "thigh", "upper_arm", "wrist")) {
+                                   if(tolower(substr(bodyPlacement, start = 1, stop = nchar(part))) == part) {
+                                        ppt.report[paste(visit, "CSV", part, sep = ".")] <- "OK"
+                                        break
+                                   }
                               }
                          }
                     }
@@ -83,7 +86,7 @@ check.one.participant.folder <- function(chores.directory, participant) {
      }
      for(j in 2:(ncol(ppt.report)-1)) {
           if(ppt.report[j] != "OK") {
-               ppt.report$status <- "INCOMPLETE"
+               ppt.report$STATUS <- "INCOMPLETE"
                break
           }
      }
@@ -92,8 +95,9 @@ check.one.participant.folder <- function(chores.directory, participant) {
 }
 
 # Script ---------------------------
+setwd("~/Workspaces/R workspace/ChoresXL/toolboxes/")
 chores.directory <- "~/../../Volumes/SHARE/ARRC/Active_Studies/CHORES-XL_087-2013/Participant Data/"
-report <- data.frame(matrix(nrow = 0, ncol = 53))
+report <- data.frame(matrix(nrow = 0, ncol = 54))
 l <- dir(chores.directory)
 for(i in 3:length(l)) {
      print(paste("Checking ", l[i], " - (", i, " out of ", (length(l)-2), ")", sep = ""))
@@ -107,3 +111,6 @@ for(i in 3:length(l)) {
 rm(chores.directory, l, i, ppt.report)
 
 
+today <- "061416"
+write.csv(report, file = paste("~/../../Volumes/SHARE/ARRC/Active_Studies/CHORES-XL_087-2013/Participant Data/scan_log_", today, ".csv", sep = ""), row.names = F)
+rm(list = ls())
